@@ -24,27 +24,27 @@ type Schema struct {
 	Ptr string // json-pointer to schema. always starts with `#`
 
 	// type agnostic validations
-	Always    *bool // always pass/fail
 	Ref       *Schema
 	Types     []string
-	Constant  []interface{}
 	Enum      []interface{}
-	EnumError string // error message for enum fail
 	Not       *Schema
 	AllOf     []*Schema
 	AnyOf     []*Schema
 	OneOf     []*Schema
+	always    *bool // always pass/fail
+	constant  []interface{}
+	enumError string // error message for enum fail
 
 	// object validations
 	MinProperties        int // -1 if not specified
 	MaxProperties        int // -1 if not specified
 	Required             []string
 	Properties           map[string]*Schema
-	PropertyNames        *Schema
 	RegexProperties      bool // property names must be valid regex
 	PatternProperties    map[*regexp.Regexp]*Schema
 	AdditionalProperties interface{}            // nil or false or *Schema
 	Dependencies         map[string]interface{} // value is *Schema or []string
+	propertyNames        *Schema
 
 	// array validations
 	MinItems        int // -1 if not specified
@@ -52,14 +52,14 @@ type Schema struct {
 	UniqueItems     bool
 	Items           interface{} // nil or *Schema or []*Schema
 	AdditionalItems interface{} // nil or bool or *Schema
-	Contains        *Schema
+	contains        *Schema
 
 	// string validations
 	MinLength  int // -1 if not specified
 	MaxLength  int // -1 if not specified
 	Pattern    *regexp.Regexp
-	Format     formats.Format
 	FormatName string
+	format     formats.Format
 
 	// number validators
 	Minimum          *big.Float
@@ -125,8 +125,8 @@ func (s *Schema) ValidateInterface(doc interface{}) (err error) {
 
 // validate validates given value v with this schema.
 func (s *Schema) validate(v interface{}) error {
-	if s.Always != nil {
-		if !*s.Always {
+	if s.always != nil {
+		if !*s.always {
 			return validationError("", "always fail")
 		}
 		return nil
@@ -167,13 +167,13 @@ func (s *Schema) validate(v interface{}) error {
 		}
 	}
 
-	if len(s.Constant) > 0 {
-		if !equals(v, s.Constant[0]) {
-			switch jsonType(s.Constant[0]) {
+	if len(s.constant) > 0 {
+		if !equals(v, s.constant[0]) {
+			switch jsonType(s.constant[0]) {
 			case "object", "array":
 				return validationError("const", "const failed")
 			default:
-				return validationError("const", "value must be %#v", s.Constant[0])
+				return validationError("const", "value must be %#v", s.constant[0])
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 		if !matched {
-			return validationError("enum", s.EnumError)
+			return validationError("enum", s.enumError)
 		}
 	}
 
@@ -275,9 +275,9 @@ func (s *Schema) validate(v interface{}) error {
 			}
 		}
 
-		if s.PropertyNames != nil {
+		if s.propertyNames != nil {
 			for pname := range v {
-				if err := s.PropertyNames.validate(pname); err != nil {
+				if err := s.propertyNames.validate(pname); err != nil {
 					return addContext(escape(pname), "propertyNames", err)
 				}
 			}
@@ -380,11 +380,11 @@ func (s *Schema) validate(v interface{}) error {
 				}
 			}
 		}
-		if s.Contains != nil {
+		if s.contains != nil {
 			matched := false
 			var causes []error
 			for i, item := range v {
-				if err := s.Contains.validate(item); err != nil {
+				if err := s.contains.validate(item); err != nil {
 					causes = append(causes, addContext(strconv.Itoa(i), "", err))
 				} else {
 					matched = true
@@ -409,7 +409,7 @@ func (s *Schema) validate(v interface{}) error {
 		if s.Pattern != nil && !s.Pattern.MatchString(v) {
 			return validationError("pattern", "does not match pattern %q", s.Pattern)
 		}
-		if s.Format != nil && !s.Format(v) {
+		if s.format != nil && !s.format(v) {
 			return validationError("format", "%q is not valid %q", v, s.FormatName)
 		}
 

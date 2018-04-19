@@ -166,7 +166,7 @@ func IsIPV4(s string) bool {
 // IsIPV6 tells whether given string is a valid representation of an IPv6 address
 // as defined in RFC 2373, section 2.2.
 func IsIPV6(s string) bool {
-	if !strings.Contains(s, ":") {
+	if !strings.contains(s, ":") {
 		return false
 	}
 	return net.ParseIP(s) != nil

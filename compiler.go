@@ -225,7 +225,7 @@ func (c Compiler) compile(draft *Draft, r *resource, s *Schema, base string, roo
 	}
 	switch m := m.(type) {
 	case bool:
-		s.Always = &m
+		s.always = &m
 		return s, nil
 	default:
 		return s, c.compileMap(draft, r, s, base, root, m.(map[string]interface{}))
@@ -270,16 +270,16 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 				break
 			}
 		}
-		s.EnumError = "enum failed"
+		s.enumError = "enum failed"
 		if allPrimitives {
 			if len(s.Enum) == 1 {
-				s.EnumError = fmt.Sprintf("value must be %#v", s.Enum[0])
+				s.enumError = fmt.Sprintf("value must be %#v", s.Enum[0])
 			} else {
 				strEnum := make([]string, len(s.Enum))
 				for i, item := range s.Enum {
 					strEnum[i] = fmt.Sprintf("%#v", item)
 				}
-				s.EnumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
+				s.enumError = fmt.Sprintf("value must be one of %s", strings.Join(strEnum, ", "))
 			}
 		}
 	}
@@ -427,7 +427,7 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 
 	if format, ok := m["format"]; ok {
 		s.FormatName = format.(string)
-		s.Format, _ = formats.Get(s.FormatName)
+		s.format, _ = formats.Get(s.FormatName)
 	}
 
 	loadFloat := func(pname string) *big.Float {
@@ -464,16 +464,16 @@ func (c Compiler) compileMap(draft *Draft, r *resource, s *Schema, base string, 
 
 	if draft == Draft6 {
 		if c, ok := m["const"]; ok {
-			s.Constant = []interface{}{c}
+			s.constant = []interface{}{c}
 		}
 		if propertyNames, ok := m["propertyNames"]; ok {
-			s.PropertyNames, err = c.compile(draft, r, nil, base, root, propertyNames)
+			s.propertyNames, err = c.compile(draft, r, nil, base, root, propertyNames)
 			if err != nil {
 				return err
 			}
 		}
 		if contains, ok := m["contains"]; ok {
-			s.Contains, err = c.compile(draft, r, nil, base, root, contains)
+			s.contains, err = c.compile(draft, r, nil, base, root, contains)
 			if err != nil {
 				return err
 			}
